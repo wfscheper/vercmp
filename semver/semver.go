@@ -38,6 +38,17 @@ func (s SemanticVersion) Keys() [7]int {
 	return k
 }
 
+func (s SemanticVersion) String() string {
+	str := fmt.Sprintf("%d.%d.%d", s.Major, s.Minor, s.Patch)
+	if s.PreReleaseType != "" {
+		str = str + fmt.Sprintf(".%s%d", s.PreReleaseType, s.PreRelease)
+	}
+	if s.DevCount != 0 {
+		str = str + fmt.Sprintf(".dev%d", s.DevCount)
+	}
+	return str
+}
+
 func New(v string) (*SemanticVersion, error) {
 	s := new(SemanticVersion)
 	parsed := strings.Split(strings.ToLower(strings.TrimSpace(v)), ".")
