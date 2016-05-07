@@ -351,25 +351,36 @@ func TestVersionCompare(t *testing.T) {
 	}
 }
 
+func BenchmarkVercmp(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Vercmp("1.2.3-milestone.1", "1.2.3-milestone.2")
+	}
+}
+
+func BenchmarkVercmpMavenVersion(b *testing.B) {
+	v1 := New("1.2.3-milestone.1")
+	v2 := New("1.2.3-milestone.2")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Vercmp(v1, v2)
+	}
+}
+
 func assertVersionEquality(v1, v2 string) bool {
-	mver1 := New(v1)
-	mver2 := New(v2)
-	if Vercmp(mver1, mver2) != 0 {
+	if Vercmp(v1, v2) != 0 {
 		return false
 	}
-	if Vercmp(mver2, mver1) != 0 {
+	if Vercmp(v2, v1) != 0 {
 		return false
 	}
 	return true
 }
 
 func assertVersionOrder(low, high string) bool {
-	vLow := New(low)
-	vHigh := New(high)
-	if Vercmp(vLow, vHigh) >= 0 {
+	if Vercmp(low, high) >= 0 {
 		return false
 	}
-	if Vercmp(vHigh, vLow) <= 0 {
+	if Vercmp(high, low) <= 0 {
 		return false
 	}
 	return true

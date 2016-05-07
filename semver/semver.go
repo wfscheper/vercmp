@@ -1,3 +1,8 @@
+// Package semver implements parsing and comparing semantic versions
+//
+// Semantic versions conform to the Semantic Versioning 3.0.0 standard
+// described at http://docs.openstack.org/developer/pbr/semver.html.
+
 package semver
 
 import (
@@ -20,7 +25,7 @@ type SemanticVersion struct {
 	PreReleaseType                            string
 }
 
-func (s SemanticVersion) Keys() [7]int {
+func (s SemanticVersion) keys() [7]int {
 	k := [7]int{}
 	k[0], k[1], k[2] = s.Major, s.Minor, s.Patch
 	if s.DevCount != 0 && s.PreReleaseType == "" {
@@ -49,6 +54,7 @@ func (s SemanticVersion) String() string {
 	return str
 }
 
+// New parses a semantic version, per Semantic Versioning 3.0.0.
 func New(v string) (*SemanticVersion, error) {
 	s := new(SemanticVersion)
 	parsed := strings.Split(strings.ToLower(strings.TrimSpace(v)), ".")
@@ -102,17 +108,52 @@ func New(v string) (*SemanticVersion, error) {
 	return s, nil
 }
 
-func Vercmp(a, b *SemanticVersion) int {
-	b_keys := b.Keys()
-	for idx, a_key := range a.Keys() {
-		b_key := b_keys[idx]
-		if a_key != b_key {
-			return a_key - b_key
+// Vercmp compares two semantic versions and returns an integer less than 0
+// if a is older than b, 0 if a and b are the same, and an integer greater than
+// 0 if a is newer than b.
+func Vercmp(a, b interface{}) int {
+	var aVer, bVer *SemanticVersion
+	var err error
+
+	switch a := a.(type) {
+	default:
+		panic(fmt.Sprintf("Unparsable type %T", a))
+	case string:
+		aVer, err = New(a)
+		if err != nil {
+			panic(fmt.Sprint(err))
+		}
+	case SemanticVersion:
+		aVer = &a
+	case *SemanticVersion:
+		aVer = a
+	}
+	switch b := b.(type) {
+	default:
+		panic(fmt.Sprintf("Unparsable type %T", b))
+	case string:
+		bVer, err = New(b)
+		if err != nil {
+			panic(fmt.Sprint(err))
+		}
+	case SemanticVersion:
+		bVer = &b
+	case *SemanticVersion:
+		bVer = b
+	}
+
+	bKeys := bVer.keys()
+	for idx, aKey := range aVer.keys() {
+		bKey := bKeys[idx]
+		if aKey != bKey {
+			return aKey - bKey
 		}
 	}
 	return 0
 }
 
+// parseBuffer converts a numeric string to an interger, otherwise it returns
+// the string unmodified.
 func parseBuffer(b string) interface{} {
 	if r, err := strconv.Atoi(b); err == nil {
 		return r
@@ -121,6 +162,8 @@ func parseBuffer(b string) interface{} {
 	}
 }
 
+// parsePreRelease parses s and returns the pre-release type and the
+// pre-release version.
 func parsePreRelease(s string) (string, int, error) {
 	var preReleaseType string
 
@@ -136,6 +179,10 @@ func parsePreRelease(s string) (string, int, error) {
 	}
 }
 
+// pop removes the first element from the slice, and returns it and the
+// remainder of the slice. If the slice contains only one element, then pop
+// returns the element and an empty slice. If the slice is empty, pop returns
+// an empty string and an empty slice.
 func pop(s []string) (string, []string) {
 	n := len(s)
 	if n > 1 {

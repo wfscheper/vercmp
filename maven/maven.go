@@ -74,8 +74,25 @@ func New(v string) *MavenVersion {
 	return &MavenVersion{v, parsed}
 }
 
-func Vercmp(a, b *MavenVersion) int {
-	return compareSlice(a.parsed, b.parsed)
+func Vercmp(a, b interface{}) int {
+	var aVer, bVer *MavenVersion
+	switch a := a.(type) {
+	case string:
+		aVer = New(a)
+	case *MavenVersion:
+		aVer = a
+	case MavenVersion:
+		aVer = &a
+	}
+	switch b := b.(type) {
+	case string:
+		bVer = New(b)
+	case *MavenVersion:
+		bVer = b
+	case MavenVersion:
+		bVer = &b
+	}
+	return compareSlice(aVer.parsed, bVer.parsed)
 }
 
 func compare(a, b interface{}) int {

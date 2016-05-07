@@ -166,27 +166,39 @@ func TestVersionOrdering(t *testing.T) {
 	}
 
 	for _, v := range versions {
-		ver, _ := New(v)
-		assert.True(t, assertVersionEqual(ver, ver), "Expected %s == %s", v, v)
+		assert.True(t, assertVersionEqual(v, v), "Expected %s == %s", v, v)
 	}
 
 	for _, pairs := range combinations(versions, 2) {
 		left, right := pairs[0], pairs[1]
 		l_pos := index(versions, left)
 		r_pos := index(versions, right)
-		l_ver, _ := New(left)
-		r_ver, _ := New(right)
 		if l_pos < r_pos {
-			assert.True(t, assertVersionOrder(l_ver, r_ver),
+			assert.True(t, assertVersionOrder(left, right),
 				"Expected %v < %v", left, right)
 		} else {
-			assert.True(t, assertVersionOrder(r_ver, l_ver),
+			assert.True(t, assertVersionOrder(right, left),
 				"Expected %v < %v", right, left)
 		}
 	}
 }
 
-func assertVersionEqual(v1, v2 *SemanticVersion) bool {
+func BenchmarkVercmp(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Vercmp("1.2.3.a5.dev6", "1.2.3.a5.dev7")
+	}
+}
+
+func BenchmarkVercmpSemanticVersion(b *testing.B) {
+	v1, _ := New("1.2.3.a5.dev6")
+	v2, _ := New("1.2.3.a5.dev7")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Vercmp(v1, v2)
+	}
+}
+
+func assertVersionEqual(v1, v2 interface{}) bool {
 	if Vercmp(v1, v2) != 0 {
 		return false
 	}
@@ -196,7 +208,7 @@ func assertVersionEqual(v1, v2 *SemanticVersion) bool {
 	return true
 }
 
-func assertVersionOrder(low, high *SemanticVersion) bool {
+func assertVersionOrder(low, high interface{}) bool {
 	if Vercmp(low, high) >= 0 {
 		return false
 	}
