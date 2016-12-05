@@ -1,0 +1,18 @@
+language: go
+sudo: required
+go:
+  - 1.6.4
+  - 1.7.4
+  - tip
+os:
+  - linux
+  - osx
+matrix:
+  allow_failures:
+    - go: tip
+  fast_finish: true
+install:
+  - make govendor
+script:
+  - make check
+  - go build -race

@@ -265,5 +265,4 @@ func combinations(s []string, r int) [][]string {
 		}
 		rv = append(rv, c)
 	}
-	return rv
 }
