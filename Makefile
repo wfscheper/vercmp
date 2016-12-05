@@ -68,3 +68,9 @@ test-cover-html:
 		govendor test -coverprofile=coverage.out -covermode=count $(pkg);\
 		tail -n +2 coverage.out >> coverage-all.out;)
 	go tool cover -html=coverage-all.out
+
+test-coveralls:
+	echo "mode: count" > coverage.out
+	$(foreach pkg,$(PACKAGES),\
+		govendor test -coverprofile=coverage-pkg.out -covermode=count $(pkg);\
+		tail -n +2 coverage-pkg.out >> coverage.out;)
