@@ -6,25 +6,22 @@ import (
 	"strings"
 )
 
-var aliases map[string]string = map[string]string{
+var aliases = map[string]string{
 	"ga":    "",
 	"final": "",
 	"cr":    "rc",
 }
 
-var qualifiers [7]string = [7]string{"alpha", "beta", "milestone", "rc", "snapshot", "", "sp"}
+var qualifiers = [7]string{"alpha", "beta", "milestone", "rc", "snapshot", "", "sp"}
 
-type MavenVersion struct {
+// Version repersents a parsed Maven 3 version string.
+type Version struct {
 	unparsed string
 	parsed   []interface{}
 }
 
-func (m *MavenVersion) String() string {
-	return m.unparsed
-}
-
-// New returns a new MavenVersion parsed from the version string v.
-func New(v string) *MavenVersion {
+// New returns a new Version parsed from the version string v.
+func New(v string) *Version {
 	parsed := make([]interface{}, 0, 10)
 	currentSlice := &parsed
 	start := 0
@@ -71,25 +68,33 @@ func New(v string) *MavenVersion {
 		*currentSlice = append(*currentSlice, parseBuffer(buf[start:], false))
 	}
 	normalize(&parsed)
-	return &MavenVersion{v, parsed}
+	return &Version{v, parsed}
 }
 
+// String returns the oringal Maven version.
+func (m *Version) String() string {
+	return m.unparsed
+}
+
+// Vercmp compares two Maven 3 versions, a and b, and returns 1 if a is newer
+// than b, 0 if a and b are equal, or -1 if a is older than b. a and b an be
+// either a string or a Version.
 func Vercmp(a, b interface{}) int {
-	var aVer, bVer *MavenVersion
+	var aVer, bVer *Version
 	switch a := a.(type) {
 	case string:
 		aVer = New(a)
-	case *MavenVersion:
+	case *Version:
 		aVer = a
-	case MavenVersion:
+	case Version:
 		aVer = &a
 	}
 	switch b := b.(type) {
 	case string:
 		bVer = New(b)
-	case *MavenVersion:
+	case *Version:
 		bVer = b
-	case MavenVersion:
+	case Version:
 		bVer = &b
 	}
 	return compareSlice(aVer.parsed, bVer.parsed)
@@ -161,11 +166,11 @@ func compareString(a string, b interface{}) int {
 	case nil:
 		return compareString(a, "")
 	case string:
-		a_value := stringValue(a)
-		b_value := stringValue(b)
-		if a_value < b_value {
+		aValue := stringValue(a)
+		bValue := stringValue(b)
+		if aValue < bValue {
 			return -1
-		} else if a_value == b_value {
+		} else if aValue == bValue {
 			return 0
 		} else {
 			return 1
@@ -256,24 +261,24 @@ type interfaceTuple struct {
 func zip(a, b []interface{}) []interfaceTuple {
 	var r []interfaceTuple
 
-	len_a := len(a)
-	len_b := len(b)
+	aLen := len(a)
+	bLen := len(b)
 
-	if len_a < len_b {
-		r = make([]interfaceTuple, len_b)
+	if aLen < bLen {
+		r = make([]interfaceTuple, bLen)
 		for i, e := range a {
 			r[i] = interfaceTuple{Left: e, Right: b[i]}
 		}
-		for i, e := range b[len_a:] {
-			r[len_a+i] = interfaceTuple{Left: nil, Right: e}
+		for i, e := range b[aLen:] {
+			r[aLen+i] = interfaceTuple{Left: nil, Right: e}
 		}
 	} else {
-		r = make([]interfaceTuple, len_a)
+		r = make([]interfaceTuple, aLen)
 		for i, e := range b {
 			r[i] = interfaceTuple{Left: a[i], Right: e}
 		}
-		for i, e := range a[len_b:] {
-			r[len_b+i] = interfaceTuple{Left: e, Right: nil}
+		for i, e := range a[bLen:] {
+			r[bLen+i] = interfaceTuple{Left: e, Right: nil}
 		}
 	}
 	return r

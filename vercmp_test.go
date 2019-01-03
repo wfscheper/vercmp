@@ -14,23 +14,10 @@ func TestMavenVerCmp(t *testing.T) {
 		{"2.0", "1", 1},
 	}
 
-	var msg string
-	var cmp bool
 	for _, tt := range tests {
 		got := MavenVerCmp(tt.a, tt.b)
-		switch {
-		case tt.want < 0:
-			cmp = got < 0
-			msg = "Expected MavenVerCmp(%s, %s) < 0, got %d"
-		case tt.want == 0:
-			cmp = got == 0
-			msg = "Expected MavenVerCmp(%s, %s) == 0, got %d"
-		default:
-			cmp = got > 0
-			msg = "Expected MavenVerCmp(%s, %s) > 0, got %d"
-		}
-		if !cmp {
-			t.Errorf(msg, tt.a, tt.b, got)
+		if got != tt.want {
+			t.Errorf("MavenVerCmp(%s, %s): got %d, want %d", tt.a, tt.b, got, tt.want)
 		}
 	}
 }
@@ -45,23 +32,10 @@ func TestSemVerCmp(t *testing.T) {
 		{"2.0.0", "2.0.0", 0},
 	}
 
-	var msg string
-	var cmp bool
 	for _, tt := range tests {
 		got := SemVerCmp(tt.a, tt.b)
-		switch {
-		case tt.want < 0:
-			cmp = got < 0
-			msg = "Expected SemVerCmp(%s, %s) < 0, got %d"
-		case tt.want == 0:
-			cmp = got == 0
-			msg = "Expected SemVerCmp(%s, %s) == 0, got %d"
-		default:
-			cmp = got > 0
-			msg = "Expected SemVerCmp(%s, %s) > 0, got %d"
-		}
-		if !cmp {
-			t.Errorf(msg, tt.a, tt.b, got)
+		if got != tt.want {
+			t.Errorf("SemVerCmp(%s, %s): got %d, want %d", tt.a, tt.b, got, tt.want)
 		}
 	}
 }

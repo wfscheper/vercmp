@@ -1,22 +1,26 @@
 language: go
-sudo: required
+sudo: false
+notifications:
+  email: false
 go:
-- 1.6.4
-- 1.7.4
+- 1.11
 - tip
 os:
 - linux
 - osx
+env:
+- GO111MODULE=on
 matrix:
   allow_failures:
   - go: tip
   fast_finish: true
 install:
-- make govendor
-- go get golang.org/x/tools/cmd/cover
 - go get github.com/mattn/goveralls
 script:
-- make check
-- make test-coveralls
+- go fmt ./...
+- go vet ./...
+- golint ./...
+- go test -timeout 15s -race ./...
+- go test -timeout 15s -cover -covermode=atomic -coverprofile=coverage.out ./...
 - goveralls -coverprofile=coverage.out -service=travis-ci
 - go build -race
