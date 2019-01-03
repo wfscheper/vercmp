@@ -15,6 +15,7 @@ matrix:
   - go: tip
   fast_finish: true
 install:
+- go get golang.org/x/lint/golint
 - go get github.com/mattn/goveralls
 script:
 - go fmt ./...
