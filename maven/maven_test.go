@@ -1,16 +1,16 @@
 package maven
 
 import (
+	"fmt"
+	"reflect"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestZip(t *testing.T) {
 	tests := []struct {
-		title    string
-		a, b     []interface{}
-		expected []interfaceTuple
+		title string
+		a, b  []interface{}
+		want  []interfaceTuple
 	}{
 		{
 			"One element each",
@@ -56,11 +56,14 @@ func TestZip(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		actual := zip(test.a, test.b)
-		assert.Equal(t, test.expected, actual,
-			"(%s) Expected zip(%v, %v) == %v, but got %v", test.title, test.a,
-			test.b, test.expected, actual)
+	t.Parallel()
+	for _, tt := range tests {
+		t.Run(tt.title, func(t *testing.T) {
+			got := zip(tt.a, tt.b)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("got %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
@@ -68,7 +71,7 @@ func TestParseBuffer(t *testing.T) {
 	tests := []struct {
 		b            string
 		digitFollows bool
-		expected     interface{}
+		want         interface{}
 	}{
 		{"1", false, 1},
 		{"10", false, 10},
@@ -90,16 +93,21 @@ func TestParseBuffer(t *testing.T) {
 		{"cr", true, "rc"},
 	}
 
-	for _, test := range tests {
-		actual := parseBuffer(test.b, test.digitFollows)
-		assert.Equal(t, test.expected, actual, "Expected parseBuffer(%v, %v) == %v, but got %v", test.b, test.digitFollows, test.expected, actual)
+	t.Parallel()
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("parseBuffer(%v, %v)", tt.b, tt.digitFollows), func(t *testing.T) {
+			got := parseBuffer(tt.b, tt.digitFollows)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("got %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
 func TestNormalize(t *testing.T) {
 	tests := []struct {
-		s        []interface{}
-		expected []interface{}
+		s    []interface{}
+		want []interface{}
 	}{
 		{
 			[]interface{}{0},
@@ -143,94 +151,106 @@ func TestNormalize(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		actual := make([]interface{}, len(test.s))
-		copy(actual, test.s)
-		normalize(&actual)
-		assert.Equal(t, test.expected, actual, "Expected normalize(%v) == %v, but got %v", test.s, test.expected, actual)
+	t.Parallel()
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("normalize(%v)", tt.s), func(t *testing.T) {
+			got := make([]interface{}, len(tt.s))
+			copy(got, tt.s)
+			normalize(&got)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("got %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
 func TestNewSlice(t *testing.T) {
 	initial := []interface{}{1}
-	assert.Equal(t, []interface{}{1}, initial)
-
-	new := newSlice(&initial)
-	assert.Equal(t, []interface{}{1, new}, initial)
-	assert.ObjectsAreEqual(new, initial[1])
+	n := newSlice(&initial)
+	want := []interface{}{1, n}
+	if !reflect.DeepEqual(initial, want) {
+		t.Fatalf("Got %v, want %v", initial, want)
+	}
+	if !reflect.DeepEqual(initial[1], n) {
+		t.Fatalf("Got %v, want %v", initial[1], n)
+	}
 }
 
 func TestNewVersion(t *testing.T) {
-	tests := []*MavenVersion{
+	tests := []MavenVersion{
 		// weird versions
-		&MavenVersion{".1", []interface{}{0, 1}},
-		&MavenVersion{"-1", []interface{}{[]interface{}{1}}},
+		MavenVersion{".1", []interface{}{0, 1}},
+		MavenVersion{"-1", []interface{}{[]interface{}{1}}},
 		// test some major.minor.tiny parsing
-		&MavenVersion{"1", []interface{}{1}},
-		&MavenVersion{"1.0", []interface{}{1}},
-		&MavenVersion{"1.0.0", []interface{}{1}},
-		&MavenVersion{"1.0.0.0", []interface{}{1}},
-		&MavenVersion{"11", []interface{}{11}},
-		&MavenVersion{"11.0", []interface{}{11}},
-		&MavenVersion{"1-1", []interface{}{1, []interface{}{1}}},
-		&MavenVersion{"1-1-1", []interface{}{1, []interface{}{1, []interface{}{1}}}},
-		&MavenVersion{" 1 ", []interface{}{1}},
+		MavenVersion{"1", []interface{}{1}},
+		MavenVersion{"1.0", []interface{}{1}},
+		MavenVersion{"1.0.0", []interface{}{1}},
+		MavenVersion{"1.0.0.0", []interface{}{1}},
+		MavenVersion{"11", []interface{}{11}},
+		MavenVersion{"11.0", []interface{}{11}},
+		MavenVersion{"1-1", []interface{}{1, []interface{}{1}}},
+		MavenVersion{"1-1-1", []interface{}{1, []interface{}{1, []interface{}{1}}}},
+		MavenVersion{" 1 ", []interface{}{1}},
 		// test qualifeirs
-		&MavenVersion{"1.0-ALPHA", []interface{}{1, []interface{}{"alpha"}}},
-		&MavenVersion{"1-alpha", []interface{}{1, []interface{}{"alpha"}}},
-		&MavenVersion{"1.0ALPHA", []interface{}{1, []interface{}{"alpha"}}},
-		&MavenVersion{"1-alpha", []interface{}{1, []interface{}{"alpha"}}},
-		&MavenVersion{"1.0-A", []interface{}{1, []interface{}{"a"}}},
-		&MavenVersion{"1-a", []interface{}{1, []interface{}{"a"}}},
-		&MavenVersion{"1.0A", []interface{}{1, []interface{}{"a"}}},
-		&MavenVersion{"1a", []interface{}{1, []interface{}{"a"}}},
-		&MavenVersion{"1.0-BETA", []interface{}{1, []interface{}{"beta"}}},
-		&MavenVersion{"1-beta", []interface{}{1, []interface{}{"beta"}}},
-		&MavenVersion{"1.0-B", []interface{}{1, []interface{}{"b"}}},
-		&MavenVersion{"1-b", []interface{}{1, []interface{}{"b"}}},
-		&MavenVersion{"1.0B", []interface{}{1, []interface{}{"b"}}},
-		&MavenVersion{"1b", []interface{}{1, []interface{}{"b"}}},
-		&MavenVersion{"1.0-MILESTONE", []interface{}{1, []interface{}{"milestone"}}},
-		&MavenVersion{"1.0-milestone", []interface{}{1, []interface{}{"milestone"}}},
-		&MavenVersion{"1-M", []interface{}{1, []interface{}{"m"}}},
-		&MavenVersion{"1.0-m", []interface{}{1, []interface{}{"m"}}},
-		&MavenVersion{"1M", []interface{}{1, []interface{}{"m"}}},
-		&MavenVersion{"1m", []interface{}{1, []interface{}{"m"}}},
-		&MavenVersion{"1.0-RC", []interface{}{1, []interface{}{"rc"}}},
-		&MavenVersion{"1-rc", []interface{}{1, []interface{}{"rc"}}},
-		&MavenVersion{"1.0-SNAPSHOT", []interface{}{1, []interface{}{"snapshot"}}},
-		&MavenVersion{"1.0-snapshot", []interface{}{1, []interface{}{"snapshot"}}},
-		&MavenVersion{"1-SP", []interface{}{1, []interface{}{"sp"}}},
-		&MavenVersion{"1.0-sp", []interface{}{1, []interface{}{"sp"}}},
-		&MavenVersion{"1-GA", []interface{}{1}},
-		&MavenVersion{"1-ga", []interface{}{1}},
-		&MavenVersion{"1.0-FINAL", []interface{}{1}},
-		&MavenVersion{"1-final", []interface{}{1}},
-		&MavenVersion{"1.0-CR", []interface{}{1, []interface{}{"rc"}}},
-		&MavenVersion{"1-cr", []interface{}{1, []interface{}{"rc"}}},
+		MavenVersion{"1.0-ALPHA", []interface{}{1, []interface{}{"alpha"}}},
+		MavenVersion{"1-alpha", []interface{}{1, []interface{}{"alpha"}}},
+		MavenVersion{"1.0ALPHA", []interface{}{1, []interface{}{"alpha"}}},
+		MavenVersion{"1-alpha", []interface{}{1, []interface{}{"alpha"}}},
+		MavenVersion{"1.0-A", []interface{}{1, []interface{}{"a"}}},
+		MavenVersion{"1-a", []interface{}{1, []interface{}{"a"}}},
+		MavenVersion{"1.0A", []interface{}{1, []interface{}{"a"}}},
+		MavenVersion{"1a", []interface{}{1, []interface{}{"a"}}},
+		MavenVersion{"1.0-BETA", []interface{}{1, []interface{}{"beta"}}},
+		MavenVersion{"1-beta", []interface{}{1, []interface{}{"beta"}}},
+		MavenVersion{"1.0-B", []interface{}{1, []interface{}{"b"}}},
+		MavenVersion{"1-b", []interface{}{1, []interface{}{"b"}}},
+		MavenVersion{"1.0B", []interface{}{1, []interface{}{"b"}}},
+		MavenVersion{"1b", []interface{}{1, []interface{}{"b"}}},
+		MavenVersion{"1.0-MILESTONE", []interface{}{1, []interface{}{"milestone"}}},
+		MavenVersion{"1.0-milestone", []interface{}{1, []interface{}{"milestone"}}},
+		MavenVersion{"1-M", []interface{}{1, []interface{}{"m"}}},
+		MavenVersion{"1.0-m", []interface{}{1, []interface{}{"m"}}},
+		MavenVersion{"1M", []interface{}{1, []interface{}{"m"}}},
+		MavenVersion{"1m", []interface{}{1, []interface{}{"m"}}},
+		MavenVersion{"1.0-RC", []interface{}{1, []interface{}{"rc"}}},
+		MavenVersion{"1-rc", []interface{}{1, []interface{}{"rc"}}},
+		MavenVersion{"1.0-SNAPSHOT", []interface{}{1, []interface{}{"snapshot"}}},
+		MavenVersion{"1.0-snapshot", []interface{}{1, []interface{}{"snapshot"}}},
+		MavenVersion{"1-SP", []interface{}{1, []interface{}{"sp"}}},
+		MavenVersion{"1.0-sp", []interface{}{1, []interface{}{"sp"}}},
+		MavenVersion{"1-GA", []interface{}{1}},
+		MavenVersion{"1-ga", []interface{}{1}},
+		MavenVersion{"1.0-FINAL", []interface{}{1}},
+		MavenVersion{"1-final", []interface{}{1}},
+		MavenVersion{"1.0-CR", []interface{}{1, []interface{}{"rc"}}},
+		MavenVersion{"1-cr", []interface{}{1, []interface{}{"rc"}}},
 		// test some transistion
-		&MavenVersion{"1.0-alpha1", []interface{}{1, []interface{}{"alpha", []interface{}{1}}}},
-		&MavenVersion{"1.0-alpha2", []interface{}{1, []interface{}{"alpha", []interface{}{2}}}},
-		&MavenVersion{"1.0.0alpha1", []interface{}{1, []interface{}{"alpha", []interface{}{1}}}},
-		&MavenVersion{"1.0-beta1", []interface{}{1, []interface{}{"beta", []interface{}{1}}}},
-		&MavenVersion{"1-beta2", []interface{}{1, []interface{}{"beta", []interface{}{2}}}},
-		&MavenVersion{"1.0.0beta1", []interface{}{1, []interface{}{"beta", []interface{}{1}}}},
-		&MavenVersion{"1.0-BETA1", []interface{}{1, []interface{}{"beta", []interface{}{1}}}},
-		&MavenVersion{"1-BETA2", []interface{}{1, []interface{}{"beta", []interface{}{2}}}},
-		&MavenVersion{"1.0.0BETA1", []interface{}{1, []interface{}{"beta", []interface{}{1}}}},
-		&MavenVersion{"1.0-milestone1", []interface{}{1, []interface{}{"milestone", []interface{}{1}}}},
-		&MavenVersion{"1.0-milestone2", []interface{}{1, []interface{}{"milestone", []interface{}{2}}}},
-		&MavenVersion{"1.0.0milestone1", []interface{}{1, []interface{}{"milestone", []interface{}{1}}}},
-		&MavenVersion{"1.0-MILESTONE1", []interface{}{1, []interface{}{"milestone", []interface{}{1}}}},
-		&MavenVersion{"1.0-milestone2", []interface{}{1, []interface{}{"milestone", []interface{}{2}}}},
-		&MavenVersion{"1.0.0MILESTONE1", []interface{}{1, []interface{}{"milestone", []interface{}{1}}}},
-		&MavenVersion{"1.0-alpha2snapshot", []interface{}{1, []interface{}{"alpha", []interface{}{2, []interface{}{"snapshot"}}}}},
+		MavenVersion{"1.0-alpha1", []interface{}{1, []interface{}{"alpha", []interface{}{1}}}},
+		MavenVersion{"1.0-alpha2", []interface{}{1, []interface{}{"alpha", []interface{}{2}}}},
+		MavenVersion{"1.0.0alpha1", []interface{}{1, []interface{}{"alpha", []interface{}{1}}}},
+		MavenVersion{"1.0-beta1", []interface{}{1, []interface{}{"beta", []interface{}{1}}}},
+		MavenVersion{"1-beta2", []interface{}{1, []interface{}{"beta", []interface{}{2}}}},
+		MavenVersion{"1.0.0beta1", []interface{}{1, []interface{}{"beta", []interface{}{1}}}},
+		MavenVersion{"1.0-BETA1", []interface{}{1, []interface{}{"beta", []interface{}{1}}}},
+		MavenVersion{"1-BETA2", []interface{}{1, []interface{}{"beta", []interface{}{2}}}},
+		MavenVersion{"1.0.0BETA1", []interface{}{1, []interface{}{"beta", []interface{}{1}}}},
+		MavenVersion{"1.0-milestone1", []interface{}{1, []interface{}{"milestone", []interface{}{1}}}},
+		MavenVersion{"1.0-milestone2", []interface{}{1, []interface{}{"milestone", []interface{}{2}}}},
+		MavenVersion{"1.0.0milestone1", []interface{}{1, []interface{}{"milestone", []interface{}{1}}}},
+		MavenVersion{"1.0-MILESTONE1", []interface{}{1, []interface{}{"milestone", []interface{}{1}}}},
+		MavenVersion{"1.0-milestone2", []interface{}{1, []interface{}{"milestone", []interface{}{2}}}},
+		MavenVersion{"1.0.0MILESTONE1", []interface{}{1, []interface{}{"milestone", []interface{}{1}}}},
+		MavenVersion{"1.0-alpha2snapshot", []interface{}{1, []interface{}{"alpha", []interface{}{2, []interface{}{"snapshot"}}}}},
 	}
 
-	for _, test := range tests {
-		actual := New(test.unparsed)
-		assert.Equal(t, test, actual, "Expected New(%v) == %v, got %v",
-			test.unparsed, test, actual)
+	t.Parallel()
+	for _, want := range tests {
+		t.Run(want.unparsed, func(t *testing.T) {
+			got := New(want.unparsed)
+			if !reflect.DeepEqual(got, &want) {
+				t.Errorf("New(%v): got %v, want %v", want.unparsed, got, want)
+			}
+		})
 	}
 }
 
@@ -240,10 +260,14 @@ func TestVersionQualifiers(t *testing.T) {
 		"1-SNAPSHOT", "1", "1-sp", "1-sp2", "1-sp123", "1-abc", "1-def",
 		"1-pom-1", "1-1-snapshot", "1-1", "1-2", "1-123"}
 
+	t.Parallel()
 	for i, low := range qualifiers[:len(qualifiers)-1] {
 		for _, high := range qualifiers[i+1:] {
-			assert.True(t, assertVersionOrder(low, high),
-				"%s >= %s", low, high)
+			t.Run(low+" < "+high, func(t *testing.T) {
+				if !assertVersionOrder(low, high) {
+					t.Error("got false")
+				}
+			})
 		}
 	}
 }
@@ -254,10 +278,14 @@ func TestVersionNumbers(t *testing.T) {
 		"11.a2", "11.a11", "11.b2", "11.b11", "11.m2", "11.m11", "11", "11.a",
 		"11b", "11c", "11m"}
 
+	t.Parallel()
 	for i, low := range numbers[:len(numbers)-1] {
 		for _, high := range numbers[i+1:] {
-			assert.True(t, assertVersionOrder(low, high),
-				"%s >= %s", low, high)
+			t.Run(low+" < "+high, func(t *testing.T) {
+				if !assertVersionOrder(low, high) {
+					t.Error("got false")
+				}
+			})
 		}
 	}
 }
@@ -313,9 +341,13 @@ func TestVersionEquality(t *testing.T) {
 		{"1m3", "1MILESTONE3"},
 	}
 
-	for _, test := range tests {
-		assert.True(t, assertVersionEquality(test.a, test.b),
-			"%s != %s", test.a, test.b)
+	t.Parallel()
+	for _, tt := range tests {
+		t.Run(tt.a+" == "+tt.b, func(t *testing.T) {
+			if !assertVersionEquality(tt.a, tt.b) {
+				t.Error("got false")
+			}
+		})
 	}
 }
 
@@ -345,9 +377,13 @@ func TestVersionCompare(t *testing.T) {
 		{"2.0.1-xyz", "2.0.1-123"},
 	}
 
-	for _, test := range tests {
-		assert.True(t, assertVersionOrder(test.low, test.high),
-			"%s >= %s", test.low, test.high)
+	t.Parallel()
+	for _, tt := range tests {
+		t.Run(tt.low+" < "+tt.high, func(t *testing.T) {
+			if !assertVersionOrder(tt.low, tt.high) {
+				t.Error("got false")
+			}
+		})
 	}
 }
 

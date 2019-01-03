@@ -16,15 +16,14 @@
 package semver
 
 import (
+	"reflect"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNew(t *testing.T) {
 	tests := []struct {
-		v        string
-		expected *SemanticVersion
+		v    string
+		want *SemanticVersion
 	}{
 		{"1.2.3.dev6", &SemanticVersion{
 			Major:    1,
@@ -136,50 +135,66 @@ func TestNew(t *testing.T) {
 		}},
 	}
 
-	for _, test := range tests {
-		actual, err := New(test.v)
-		if assert.Nil(t, err) {
-			assert.Equal(t, test.expected, actual, "Expected New(%v) == %v, got %v",
-				test.v, test.expected, actual)
-		}
+	t.Parallel()
+	for _, tt := range tests {
+		t.Run(tt.v, func(t *testing.T) {
+			got, err := New(tt.v)
+			if err != nil {
+				t.Errorf("got %v, want nil", err)
+			}
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Errorf("got %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+var versionEqualityTests = []string{
+	"1.2.3.dev6",
+	"1.2.3.dev7",
+	"1.2.3.a4.dev12",
+	"1.2.3.a4.dev13",
+	"1.2.3.a4",
+	"1.2.3.a5.dev1",
+	"1.2.3.a5",
+	"1.2.3.b3.dev1",
+	"1.2.3.b3",
+	"1.2.3.rc2.dev1",
+	"1.2.3.rc2",
+	"1.2.3.rc3.dev1",
+	"1.2.3",
+	"1.2.4",
+	"1.3.3",
+	"2.2.3",
+}
+
+func TestVersionEquality(t *testing.T) {
+	t.Parallel()
+	for _, v := range versionEqualityTests {
+		t.Run(v+" == "+v, func(t *testing.T) {
+			if !assertVersionEqual(v, v) {
+				t.Error("got false, want true")
+			}
+		})
 	}
 }
 
 func TestVersionOrdering(t *testing.T) {
-	versions := []string{
-		"1.2.3.dev6",
-		"1.2.3.dev7",
-		"1.2.3.a4.dev12",
-		"1.2.3.a4.dev13",
-		"1.2.3.a4",
-		"1.2.3.a5.dev1",
-		"1.2.3.a5",
-		"1.2.3.b3.dev1",
-		"1.2.3.b3",
-		"1.2.3.rc2.dev1",
-		"1.2.3.rc2",
-		"1.2.3.rc3.dev1",
-		"1.2.3",
-		"1.2.4",
-		"1.3.3",
-		"2.2.3",
-	}
-
-	for _, v := range versions {
-		assert.True(t, assertVersionEqual(v, v), "Expected %s == %s", v, v)
-	}
-
-	for _, pairs := range combinations(versions, 2) {
+	t.Parallel()
+	for _, pairs := range combinations(versionEqualityTests, 2) {
 		left, right := pairs[0], pairs[1]
-		l_pos := index(versions, left)
-		r_pos := index(versions, right)
-		if l_pos < r_pos {
-			assert.True(t, assertVersionOrder(left, right),
-				"Expected %v < %v", left, right)
-		} else {
-			assert.True(t, assertVersionOrder(right, left),
-				"Expected %v < %v", right, left)
-		}
+		t.Run(left+" < "+right, func(t *testing.T) {
+			l_pos, r_pos := index(versionEqualityTests, left), index(versionEqualityTests, right)
+			if l_pos < r_pos {
+				if !assertVersionOrder(left, right) {
+					t.Errorf("Expected %v < %v", left, right)
+				}
+			} else {
+				if !assertVersionOrder(right, left) {
+					t.Errorf("Expected %v < %v", right, left)
+				}
+			}
+		})
 	}
 }
 
