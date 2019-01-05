@@ -2,7 +2,6 @@
 //
 // Semantic versions conform to the Semantic Versioning 3.0.0 standard
 // described at http://docs.openstack.org/developer/pbr/semver.html.
-
 package semver
 
 import (
@@ -13,19 +12,20 @@ import (
 
 const maxInt = int(^uint(0) >> 1)
 
-var typeMap map[string]int = map[string]int{
+var typeMap = map[string]int{
 	"a":  1,
 	"b":  2,
 	"rc": 3,
 	"":   4,
 }
 
-type SemanticVersion struct {
+// Version represents a Semantic Version string.
+type Version struct {
 	Major, Minor, Patch, PreRelease, DevCount int
 	PreReleaseType                            string
 }
 
-func (s SemanticVersion) keys() [7]int {
+func (s Version) keys() [7]int {
 	k := [7]int{}
 	k[0], k[1], k[2] = s.Major, s.Minor, s.Patch
 	if s.DevCount != 0 && s.PreReleaseType == "" {
@@ -43,7 +43,7 @@ func (s SemanticVersion) keys() [7]int {
 	return k
 }
 
-func (s SemanticVersion) String() string {
+func (s Version) String() string {
 	str := fmt.Sprintf("%d.%d.%d", s.Major, s.Minor, s.Patch)
 	if s.PreReleaseType != "" {
 		str = str + fmt.Sprintf(".%s%d", s.PreReleaseType, s.PreRelease)
@@ -55,32 +55,32 @@ func (s SemanticVersion) String() string {
 }
 
 // New parses a semantic version, per Semantic Versioning 3.0.0.
-func New(v string) (*SemanticVersion, error) {
-	s := new(SemanticVersion)
+func New(v string) (*Version, error) {
+	s := new(Version)
 	parsed := strings.Split(strings.ToLower(strings.TrimSpace(v)), ".")
 	if len(parsed) < 3 {
-		return nil, fmt.Errorf("Invalid semantic version: %v\n", v)
+		return nil, fmt.Errorf("Invalid semantic version: %v", v)
 	}
 
 	part, parsed := pop(parsed)
 	if major, err := strconv.Atoi(part); err == nil {
 		s.Major = major
 	} else {
-		return nil, fmt.Errorf("Invalid major version: %v\n", v)
+		return nil, fmt.Errorf("Invalid major version: %v", v)
 	}
 
 	part, parsed = pop(parsed)
 	if minor, err := strconv.Atoi(part); err == nil {
 		s.Minor = minor
 	} else {
-		return nil, fmt.Errorf("Invalid minor version: %v\n", v)
+		return nil, fmt.Errorf("Invalid minor version: %v", v)
 	}
 
 	part, parsed = pop(parsed)
 	if patch, err := strconv.Atoi(part); err == nil {
 		s.Patch = patch
 	} else {
-		return nil, fmt.Errorf("Invalid patch version: %v\n", v)
+		return nil, fmt.Errorf("Invalid patch version: %v", v)
 	}
 
 	if len(parsed) > 0 {
@@ -90,18 +90,18 @@ func New(v string) (*SemanticVersion, error) {
 			if preReleaseType, preRelease, err := parsePreRelease(part); err == nil {
 				s.PreReleaseType, s.PreRelease = preReleaseType, preRelease
 			} else {
-				return nil, fmt.Errorf("Invalid pre-release version: %v\n", v)
+				return nil, fmt.Errorf("Invalid pre-release version: %v", v)
 			}
 		}
 		if part, parsed = pop(parsed); part != "" {
 			// dev part
 			if len(part) < 4 || part[:3] != "dev" {
-				return nil, fmt.Errorf("Invalid dev version: %v\n", v)
+				return nil, fmt.Errorf("Invalid dev version: %v", v)
 			}
 			if devCount, err := strconv.Atoi(part[3:]); err == nil {
 				s.DevCount = devCount
 			} else {
-				return nil, fmt.Errorf("Invalid dev version: %v\n", v)
+				return nil, fmt.Errorf("Invalid dev version: %v", v)
 			}
 		}
 	}
@@ -112,7 +112,7 @@ func New(v string) (*SemanticVersion, error) {
 // if a is older than b, 0 if a and b are the same, and an integer greater than
 // 0 if a is newer than b.
 func Vercmp(a, b interface{}) int {
-	var aVer, bVer *SemanticVersion
+	var aVer, bVer *Version
 	var err error
 
 	switch a := a.(type) {
@@ -123,9 +123,9 @@ func Vercmp(a, b interface{}) int {
 		if err != nil {
 			panic(fmt.Sprint(err))
 		}
-	case SemanticVersion:
+	case Version:
 		aVer = &a
-	case *SemanticVersion:
+	case *Version:
 		aVer = a
 	}
 	switch b := b.(type) {
@@ -136,9 +136,9 @@ func Vercmp(a, b interface{}) int {
 		if err != nil {
 			panic(fmt.Sprint(err))
 		}
-	case SemanticVersion:
+	case Version:
 		bVer = &b
-	case *SemanticVersion:
+	case *Version:
 		bVer = b
 	}
 
@@ -157,9 +157,8 @@ func Vercmp(a, b interface{}) int {
 func parseBuffer(b string) interface{} {
 	if r, err := strconv.Atoi(b); err == nil {
 		return r
-	} else {
-		return b
 	}
+	return b
 }
 
 // parsePreRelease parses s and returns the pre-release type and the
@@ -174,9 +173,8 @@ func parsePreRelease(s string) (string, int, error) {
 	}
 	if preRelease, err := strconv.Atoi(s); err == nil {
 		return preReleaseType, preRelease, err
-	} else {
-		return "", 0, err
 	}
+	return "", 0, nil
 }
 
 // pop removes the first element from the slice, and returns it and the

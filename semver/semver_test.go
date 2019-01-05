@@ -16,29 +16,28 @@
 package semver
 
 import (
+	"reflect"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNew(t *testing.T) {
 	tests := []struct {
-		v        string
-		expected *SemanticVersion
+		v    string
+		want *Version
 	}{
-		{"1.2.3.dev6", &SemanticVersion{
+		{"1.2.3.dev6", &Version{
 			Major:    1,
 			Minor:    2,
 			Patch:    3,
 			DevCount: 6,
 		}},
-		{"1.2.3.dev7", &SemanticVersion{
+		{"1.2.3.dev7", &Version{
 			Major:    1,
 			Minor:    2,
 			Patch:    3,
 			DevCount: 7,
 		}},
-		{"1.2.3.a4.dev12", &SemanticVersion{
+		{"1.2.3.a4.dev12", &Version{
 			Major:          1,
 			Minor:          2,
 			Patch:          3,
@@ -46,7 +45,7 @@ func TestNew(t *testing.T) {
 			PreReleaseType: "a",
 			DevCount:       12,
 		}},
-		{"1.2.3.a4.dev13", &SemanticVersion{
+		{"1.2.3.a4.dev13", &Version{
 			Major:          1,
 			Minor:          2,
 			Patch:          3,
@@ -54,14 +53,14 @@ func TestNew(t *testing.T) {
 			PreReleaseType: "a",
 			DevCount:       13,
 		}},
-		{"1.2.3.a4", &SemanticVersion{
+		{"1.2.3.a4", &Version{
 			Major:          1,
 			Minor:          2,
 			Patch:          3,
 			PreRelease:     4,
 			PreReleaseType: "a",
 		}},
-		{"1.2.3.a5.dev1", &SemanticVersion{
+		{"1.2.3.a5.dev1", &Version{
 			Major:          1,
 			Minor:          2,
 			Patch:          3,
@@ -69,14 +68,14 @@ func TestNew(t *testing.T) {
 			PreReleaseType: "a",
 			DevCount:       1,
 		}},
-		{"1.2.3.a5", &SemanticVersion{
+		{"1.2.3.a5", &Version{
 			Major:          1,
 			Minor:          2,
 			Patch:          3,
 			PreRelease:     5,
 			PreReleaseType: "a",
 		}},
-		{"1.2.3.b3.dev1", &SemanticVersion{
+		{"1.2.3.b3.dev1", &Version{
 			Major:          1,
 			Minor:          2,
 			Patch:          3,
@@ -84,14 +83,14 @@ func TestNew(t *testing.T) {
 			PreReleaseType: "b",
 			DevCount:       1,
 		}},
-		{"1.2.3.b3", &SemanticVersion{
+		{"1.2.3.b3", &Version{
 			Major:          1,
 			Minor:          2,
 			Patch:          3,
 			PreRelease:     3,
 			PreReleaseType: "b",
 		}},
-		{"1.2.3.rc2.dev1", &SemanticVersion{
+		{"1.2.3.rc2.dev1", &Version{
 			Major:          1,
 			Minor:          2,
 			Patch:          3,
@@ -99,14 +98,14 @@ func TestNew(t *testing.T) {
 			PreReleaseType: "rc",
 			DevCount:       1,
 		}},
-		{"1.2.3.rc2", &SemanticVersion{
+		{"1.2.3.rc2", &Version{
 			Major:          1,
 			Minor:          2,
 			Patch:          3,
 			PreRelease:     2,
 			PreReleaseType: "rc",
 		}},
-		{"1.2.3.rc3.dev1", &SemanticVersion{
+		{"1.2.3.rc3.dev1", &Version{
 			Major:          1,
 			Minor:          2,
 			Patch:          3,
@@ -114,72 +113,88 @@ func TestNew(t *testing.T) {
 			PreReleaseType: "rc",
 			DevCount:       1,
 		}},
-		{"1.2.3", &SemanticVersion{
+		{"1.2.3", &Version{
 			Major: 1,
 			Minor: 2,
 			Patch: 3,
 		}},
-		{"1.2.4", &SemanticVersion{
+		{"1.2.4", &Version{
 			Major: 1,
 			Minor: 2,
 			Patch: 4,
 		}},
-		{"1.3.3", &SemanticVersion{
+		{"1.3.3", &Version{
 			Major: 1,
 			Minor: 3,
 			Patch: 3,
 		}},
-		{"2.2.3", &SemanticVersion{
+		{"2.2.3", &Version{
 			Major: 2,
 			Minor: 2,
 			Patch: 3,
 		}},
 	}
 
-	for _, test := range tests {
-		actual, err := New(test.v)
-		if assert.Nil(t, err) {
-			assert.Equal(t, test.expected, actual, "Expected New(%v) == %v, got %v",
-				test.v, test.expected, actual)
-		}
+	t.Parallel()
+	for _, tt := range tests {
+		t.Run(tt.v, func(t *testing.T) {
+			got, err := New(tt.v)
+			if err != nil {
+				t.Errorf("got %v, want nil", err)
+			}
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Errorf("got %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+var versionEqualityTests = []string{
+	"1.2.3.dev6",
+	"1.2.3.dev7",
+	"1.2.3.a4.dev12",
+	"1.2.3.a4.dev13",
+	"1.2.3.a4",
+	"1.2.3.a5.dev1",
+	"1.2.3.a5",
+	"1.2.3.b3.dev1",
+	"1.2.3.b3",
+	"1.2.3.rc2.dev1",
+	"1.2.3.rc2",
+	"1.2.3.rc3.dev1",
+	"1.2.3",
+	"1.2.4",
+	"1.3.3",
+	"2.2.3",
+}
+
+func TestVersionEquality(t *testing.T) {
+	t.Parallel()
+	for _, v := range versionEqualityTests {
+		t.Run(v+" == "+v, func(t *testing.T) {
+			if !assertVersionEqual(v, v) {
+				t.Error("got false, want true")
+			}
+		})
 	}
 }
 
 func TestVersionOrdering(t *testing.T) {
-	versions := []string{
-		"1.2.3.dev6",
-		"1.2.3.dev7",
-		"1.2.3.a4.dev12",
-		"1.2.3.a4.dev13",
-		"1.2.3.a4",
-		"1.2.3.a5.dev1",
-		"1.2.3.a5",
-		"1.2.3.b3.dev1",
-		"1.2.3.b3",
-		"1.2.3.rc2.dev1",
-		"1.2.3.rc2",
-		"1.2.3.rc3.dev1",
-		"1.2.3",
-		"1.2.4",
-		"1.3.3",
-		"2.2.3",
-	}
-
-	for _, v := range versions {
-		assert.True(t, assertVersionEqual(v, v), "Expected %s == %s", v, v)
-	}
-
-	for _, pairs := range combinations(versions, 2) {
+	t.Parallel()
+	for _, pairs := range combinations(versionEqualityTests, 2) {
 		left, right := pairs[0], pairs[1]
-		l_pos := index(versions, left)
-		r_pos := index(versions, right)
-		if l_pos < r_pos {
-			assert.True(t, assertVersionOrder(left, right),
-				"Expected %v < %v", left, right)
-		} else {
-			assert.True(t, assertVersionOrder(right, left),
-				"Expected %v < %v", right, left)
-		}
+		t.Run(left+" < "+right, func(t *testing.T) {
+			lPos, rPos := index(versionEqualityTests, left), index(versionEqualityTests, right)
+			if lPos < rPos {
+				if !assertVersionOrder(left, right) {
+					t.Errorf("Expected %v < %v", left, right)
+				}
+			} else {
+				if !assertVersionOrder(right, left) {
+					t.Errorf("Expected %v < %v", right, left)
+				}
+			}
+		})
 	}
 }
 
@@ -189,7 +204,7 @@ func BenchmarkVercmp(b *testing.B) {
 	}
 }
 
-func BenchmarkVercmpSemanticVersion(b *testing.B) {
+func BenchmarkVercmpVersion(b *testing.B) {
 	v1, _ := New("1.2.3.a5.dev6")
 	v2, _ := New("1.2.3.a5.dev7")
 	b.ResetTimer()
@@ -235,7 +250,7 @@ func combinations(s []string, r int) [][]string {
 	}
 
 	indices := make([]int, r)
-	for i, _ := range indices {
+	for i := range indices {
 		indices[i] = i
 	}
 
