@@ -93,7 +93,8 @@ func New(v string) (*Version, error) {
 				return nil, fmt.Errorf("Invalid pre-release version: %v", v)
 			}
 		}
-		if part, parsed = pop(parsed); part != "" {
+		part, _ = pop(parsed)
+		if part != "" {
 			// dev part
 			if len(part) < 4 || part[:3] != "dev" {
 				return nil, fmt.Errorf("Invalid dev version: %v", v)
@@ -150,15 +151,6 @@ func Vercmp(a, b interface{}) int {
 		}
 	}
 	return 0
-}
-
-// parseBuffer converts a numeric string to an interger, otherwise it returns
-// the string unmodified.
-func parseBuffer(b string) interface{} {
-	if r, err := strconv.Atoi(b); err == nil {
-		return r
-	}
-	return b
 }
 
 // parsePreRelease parses s and returns the pre-release type and the

@@ -178,13 +178,6 @@ func compareString(a string, b interface{}) int {
 	}
 }
 
-// appendSlicePtr appends to a slice poitner
-func appendSlicePtr(sPtr *[]interface{}, elem ...interface{}) {
-	s := *sPtr
-	s = append(s, elem...)
-	*sPtr = s
-}
-
 // parseBuffer determines if the string b is an integer or a string
 func parseBuffer(b string, digitFollows bool) interface{} {
 	if r, err := strconv.Atoi(b); err == nil {
